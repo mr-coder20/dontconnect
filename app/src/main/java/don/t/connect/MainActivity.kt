@@ -16,9 +16,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.adivery.sdk.Adivery
 import don.t.connect.data.DataStoreManager
 import don.t.connect.navigation.AppNavigation
 import don.t.connect.ui.theme.DontConnectTheme
+import don.t.connect.utils.AdiveryAdManager
+import don.t.connect.utils.AdiveryBannerAd
 import don.t.connect.viewmodel.FakeVpnViewModel
 import don.t.connect.viewmodel.InflationViewModel
 import don.t.connect.viewmodel.SettingsViewModel
@@ -30,6 +33,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+
+        AdiveryAdManager.initialize(application)
+
+        Adivery.setLoggingEnabled(true)
 
         val dataStore = DataStoreManager(applicationContext)
         val inflationViewModel = InflationViewModel(dataStore)

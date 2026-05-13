@@ -1,5 +1,6 @@
 package don.t.connect.screens
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -32,15 +33,22 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import don.t.connect.utils.AdiveryAdManager
+import don.t.connect.utils.AdiveryBannerAd
 import don.t.connect.viewmodel.InflationViewModel
 import don.t.connect.viewmodel.CalculationResult
+import don.t.connect.viewmodel.SettingsViewModel
 import java.io.File
 import java.io.FileOutputStream
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InflationScreen(viewModel: InflationViewModel) {
+fun InflationScreen(
+    viewModel: InflationViewModel,
+    settingsViewModel: SettingsViewModel
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
     val inflationRates = listOf(50, 100, 150, 200, 250, 300, 400, 500)
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -51,120 +59,149 @@ fun InflationScreen(viewModel: InflationViewModel) {
     val savingPlaceholder = remember(isEnglish) { if (isEnglish) "Monthly savings (Toman)" else "پس‌انداز ماهانه (تومان)" }
     val currencyText = remember(isEnglish) { if (isEnglish) "Toman" else "تومان" }
 
-    Scaffold(topBar = { }) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            item {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(0.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+    // آماده‌سازی تبلیغ جایزه‌دار برای دکمه محاسبه
+    LaunchedEffect(Unit) {
+        AdiveryAdManager.prepareRewarded(context)
+    }
+
+    Scaffold(
+        topBar = {}
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            // محتوای اصلی (اسکرول‌دار)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(0.dp)
                     ) {
-                        Text(
-                            text = if (isEnglish) "💰 Purchase Outlook with Inflation" else "💰 چشم انداز خرید کالا بر اساس تورم",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                        OutlinedTextField(
-                            value = state.product,
-                            onValueChange = { viewModel.updateField("product", it) },
-                            label = { Text(if (isEnglish) "Product name (e.g. iPhone 15)" else "نام کالا (مثل آیفون ۱۵)") },
-                            leadingIcon = { Icon(Icons.Default.ShoppingCart, null) },
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = state.price,
-                            onValueChange = { newValue ->
-                                val cleaned = newValue.replace(",", "").filter { it.isDigit() }
-                                val formatted = cleaned.reversed().chunked(3).joinToString(",").reversed()
-                                viewModel.updateField("price", formatted)
-                            },
-                            label = { Text(pricePlaceholder) },
-                            leadingIcon = { Icon(Icons.Default.PriceCheck, null) },
-                            trailingIcon = { Text(currencyText, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = !expanded }
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            TextField(
-                                value = "${state.selectedInflation}%",
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(if (isEnglish) "Annual inflation rate" else "نرخ تورم سالانه") },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, null) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
+                            Text(
+                                text = if (isEnglish) "💰 Purchase Outlook with Inflation" else "💰 چشم انداز خرید کالا بر اساس تورم",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
                             )
-                            ExposedDropdownMenu(
+                            OutlinedTextField(
+                                value = state.product,
+                                onValueChange = { viewModel.updateField("product", it) },
+                                label = { Text(if (isEnglish) "Product name (e.g. iPhone 15)" else "نام کالا (مثل آیفون ۱۵)", fontSize = 14.sp,)  },
+                                leadingIcon = { Icon(Icons.Default.ShoppingCart, null) },
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = state.price,
+                                onValueChange = { newValue ->
+                                    val cleaned = newValue.replace(",", "").filter { it.isDigit() }
+                                    val formatted = cleaned.reversed().chunked(3).joinToString(",").reversed()
+                                    viewModel.updateField("price", formatted)
+                                },
+                                label = { Text(pricePlaceholder, fontSize = 14.sp) },
+                                leadingIcon = { Icon(Icons.Default.PriceCheck, null) },
+                                trailingIcon = { Text(currencyText, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            ExposedDropdownMenuBox(
                                 expanded = expanded,
-                                onDismissRequest = { expanded = false }
+                                onExpandedChange = { expanded = !expanded }
                             ) {
-                                inflationRates.forEach { rate ->
-                                    DropdownMenuItem(
-                                        text = { Text("$rate%") },
-                                        onClick = {
-                                            viewModel.setInflation(rate)
-                                            expanded = false
-                                        }
-                                    )
+                                TextField(
+                                    value = "${state.selectedInflation}%",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text(if (isEnglish) "Annual inflation rate" else "نرخ تورم سالانه") },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.TrendingUp, null) },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(MenuAnchorType.PrimaryEditable, enabled = true)
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false }
+                                ) {
+                                    inflationRates.forEach { rate ->
+                                        DropdownMenuItem(
+                                            text = { Text("$rate%") },
+                                            onClick = {
+                                                viewModel.setInflation(rate)
+                                                expanded = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
-                        }
-                        OutlinedTextField(
-                            value = state.saving,
-                            onValueChange = { newValue ->
-                                val cleaned = newValue.replace(",", "").filter { it.isDigit() }
-                                val formatted = cleaned.reversed().chunked(3).joinToString(",").reversed()
-                                viewModel.updateField("saving", formatted)
-                            },
-                            label = { Text(savingPlaceholder) },
-                            leadingIcon = { Icon(Icons.Default.Savings, null) },
-                            trailingIcon = { Text(currencyText, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            shape = RoundedCornerShape(16.dp),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        Button(
-                            onClick = { viewModel.calculate() },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(40.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.Calculate, null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (isEnglish) "🚀 Calculate" else "🚀 شروع محاسبه", fontSize = 16.sp)
+                            OutlinedTextField(
+                                value = state.saving,
+                                onValueChange = { newValue ->
+                                    val cleaned = newValue.replace(",", "").filter { it.isDigit() }
+                                    val formatted = cleaned.reversed().chunked(3).joinToString(",").reversed()
+                                    viewModel.updateField("saving", formatted)
+                                },
+                                label = { Text(savingPlaceholder, fontSize = 14.sp) },
+                                leadingIcon = { Icon(Icons.Default.Savings, null) },
+                                trailingIcon = { Text(currencyText, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                shape = RoundedCornerShape(16.dp),
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            )
+                            Button(
+                                onClick = {
+                                    if (settingsState.isAdsRemoved) {
+                                        viewModel.calculate()
+                                    } else {
+                                        AdiveryAdManager.showRewardedOrInterstitialWithCallback(context as Activity) {
+                                            viewModel.calculate()
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(40.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.Calculate, null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (isEnglish) "🚀 Calculate" else "🚀 شروع محاسبه", fontSize = 16.sp)
+                            }
                         }
                     }
                 }
             }
+
+            // بنر تبلیغاتی در پایین صفحه (فقط در صورت عدم حذف تبلیغات)
+            if (!settingsState.isAdsRemoved) {
+                AdiveryBannerAd(
+                    placementId = AdiveryAdManager.getBannerPlacementId(),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
         }
     }
 
-    // Result Dialog
+    // Result Dialog (بدون تغییر)
     if (state.showResultDialog && state.result != null) {
         var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
         val resultMessage = state.result!!.message(isEnglish)
@@ -227,11 +264,7 @@ fun InflationScreen(viewModel: InflationViewModel) {
                     }
                     Button(
                         onClick = {
-                            val fullCaption = buildFullCaption(
-                                context = context,
-                                originalMessage = resultMessage,
-                                isEnglish = isEnglish
-                            )
+                            val fullCaption = buildFullCaption(context, resultMessage, isEnglish)
                             val bitmap = capturedBitmap
                             if (bitmap != null) shareBitmap(context, bitmap, fullCaption)
                             else shareText(context, fullCaption)
@@ -247,6 +280,7 @@ fun InflationScreen(viewModel: InflationViewModel) {
         )
     }
 }
+
 
 @Composable
 fun ShareableContent(

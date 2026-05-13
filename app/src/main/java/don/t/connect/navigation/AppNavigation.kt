@@ -3,8 +3,8 @@ package don.t.connect.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +32,7 @@ import don.t.connect.viewmodel.SettingsViewModel
 
 // تعریف مقصدهای ناوبری (عنوان حذف شد)
 sealed class Screen(val route: String, val icon: ImageVector) {
-    object Inflation : Screen("inflation", Icons.Default.TrendingUp)
+    object Inflation : Screen("inflation", Icons.AutoMirrored.Filled.TrendingUp)
     object FakeVpn : Screen("fakevpn", Icons.Default.VpnKey)
     object Settings : Screen("settings", Icons.Default.Settings)
 }
@@ -94,11 +94,14 @@ fun AppNavigation(
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Inflation.route,
+            startDestination = Screen.FakeVpn.route,
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Inflation.route) {
-                InflationScreen(viewModel = inflationViewModel)
+                InflationScreen(
+                    viewModel = inflationViewModel,
+                    settingsViewModel = settingsViewModel   // اضافه شود
+                )
             }
             composable(Screen.FakeVpn.route) {
                 FakeVpnScreen(

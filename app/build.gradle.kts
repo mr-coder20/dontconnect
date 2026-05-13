@@ -60,13 +60,14 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.sdk)
 
 
-
-    implementation("androidx.navigation:navigation-compose:2.9.6")
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.mpandroidchart)
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation("androidx.compose.ui:ui:1.10.0")
     implementation("androidx.compose.ui:ui-graphics:1.10.0")
+
 }
