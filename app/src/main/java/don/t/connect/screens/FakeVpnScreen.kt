@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -47,7 +48,7 @@ fun FakeVpnScreen(
     val context = LocalContext.current
     val isEnglish = configuration.locales[0]?.language == "en"
 
-    // آماده‌سازی تبلیغ جایزه‌دار و لاگ
+    // آماده‌سازی تبلیغ جایزه‌دار
     LaunchedEffect(Unit) {
         Log.d(TAG, "Preparing rewarded ad...")
         AdiveryAdManager.prepareRewarded(context)
@@ -102,7 +103,12 @@ fun FakeVpnScreen(
                         )
                         if (!settingsState.isAdsRemoved) {
                             Button(
-                                onClick = { settingsViewModel.purchaseRemoveAds({}, {}) },
+                                onClick = {
+                                    settingsViewModel.purchaseRemoveAds(context as Activity) {
+                                        // موفقیت - در صورت نیاز می‌توانید Toast نشان دهید
+                                        Toast.makeText(context, if (isEnglish) "Purchase successful!" else "خرید با موفقیت انجام شد!", Toast.LENGTH_LONG).show()
+                                    }
+                                },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -251,11 +257,17 @@ fun FakeVpnScreen(
                                 Button(
                                     onClick = {
                                         if (settingsState.isAdsRemoved) {
-                                            Log.d(TAG, "Ads removed, connecting directly")
                                             viewModel.connect()
                                         } else {
-                                            Log.d(TAG, "Attempting to show rewarded ad")
-                                            AdiveryAdManager.showRewardedOrInterstitialWithCallback(context as Activity) {
+                                            // نمایش Toast راهنما (اختیاری)
+                                            Toast.makeText(
+                                                context,
+                                                if (isEnglish) "Please watch the ad to the end to connect!" else "لطفاً تا انتهای تبلیغ را مشاهده کنید تا اتصال فعال شود!",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+
+                                            // ✅ استفاده از متد جدید که فقط در صورت مشاهده کامل جایزه می‌دهد
+                                            AdiveryAdManager.showRewardedWithFullWatchRequirement(context as Activity) {
                                                 viewModel.connect()
                                             }
                                         }
@@ -282,7 +294,7 @@ fun FakeVpnScreen(
                 }
             }
 
-            // ✅ بنر در پایین صفحه – وسط‌چین و چسبیده
+            // بنر در پایین صفحه (فقط در صورت عدم حذف تبلیغات)
             if (!settingsState.isAdsRemoved) {
                 AdiveryBannerAd(
                     placementId = AdiveryAdManager.getBannerPlacementId(),

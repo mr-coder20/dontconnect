@@ -20,11 +20,8 @@ object AdiveryAdManager {
     fun initialize(application: Application) {
         Adivery.configure(application, APP_ID)
         try {
-            // اگر متد setTestMode وجود داشت، فعال کن
             Adivery::class.java.getMethod("setTestMode", Boolean::class.java).invoke(null, true)
-        } catch (e: NoSuchMethodException) {
-            // نادیده گرفته شود (نسخه قدیمی SDK)
-        }
+        } catch (e: NoSuchMethodException) { /* ignore */ }
         Adivery.setLoggingEnabled(true)
         setupGlobalListener()
         Log.d(TAG, "Adivery initialized with APP_ID: $APP_ID")
@@ -32,34 +29,17 @@ object AdiveryAdManager {
 
     private fun setupGlobalListener() {
         Adivery.addGlobalListener(object : AdiveryListener() {
-            override fun onInterstitialAdLoaded(placementId: String) {
-                Log.d(TAG, "Interstitial loaded: $placementId")
-            }
-
-            override fun onInterstitialAdShown(placementId: String) {
-                Log.d(TAG, "Interstitial shown")
-            }
-
-            override fun onInterstitialAdClosed(placementId: String) {
-                Log.d(TAG, "Interstitial closed")
-            }
-
-            override fun onRewardedAdLoaded(placementId: String) {
-                Log.d(TAG, "✅ Rewarded ad loaded: $placementId")
-            }
-
-            override fun onRewardedAdShown(placementId: String) {
-                Log.d(TAG, "🎥 Rewarded ad shown")
-            }
-
+            override fun onInterstitialAdLoaded(placementId: String) { Log.d(TAG, "Interstitial loaded: $placementId") }
+            override fun onInterstitialAdShown(placementId: String) { Log.d(TAG, "Interstitial shown") }
+            override fun onInterstitialAdClosed(placementId: String) { Log.d(TAG, "Interstitial closed") }
+            override fun onRewardedAdLoaded(placementId: String) { Log.d(TAG, "✅ Rewarded ad loaded: $placementId") }
+            override fun onRewardedAdShown(placementId: String) { Log.d(TAG, "🎥 Rewarded ad shown") }
             override fun onRewardedAdClosed(placementId: String, isRewarded: Boolean) {
                 Log.d(TAG, "Rewarded ad closed, rewarded: $isRewarded")
             }
-
-            fun onError(placementId: String, error: String) {
+             fun onError(placementId: String, error: String) {
                 Log.e(TAG, "❌ Error for placement $placementId: $error")
             }
-
             override fun log(placementId: String, message: String) {
                 Log.d(TAG, "Log: $placementId -> $message")
             }
@@ -76,7 +56,6 @@ object AdiveryAdManager {
         Log.d(TAG, "Rewarded ad prepared for $REWARDED_PLACEMENT_ID")
     }
 
-    // نمایش اینترستیشیال با callback پس از بسته شدن
     fun showInterstitialWithCallback(activity: Activity, onClosed: () -> Unit) {
         if (Adivery.isLoaded(INTERSTITIAL_PLACEMENT_ID)) {
             var callbackInvoked = false
@@ -98,36 +77,50 @@ object AdiveryAdManager {
         }
     }
 
-    // نمایش ریوارد یا در صورت عدم آمادگی، اینترستیشیال و سپس عملیات اصلی
-    fun showRewardedOrInterstitialWithCallback(activity: Activity, onFinished: () -> Unit) {
-        // اولویت با ریوارد است
-        if (Adivery.isLoaded(REWARDED_PLACEMENT_ID)) {
-            Log.d(TAG, "Rewarded ad is ready, showing rewarded...")
-            var callbackInvoked = false
-            val listener = object : AdiveryListener() {
-                override fun onRewardedAdClosed(placementId: String, isRewarded: Boolean) {
-                    if (placementId == REWARDED_PLACEMENT_ID && !callbackInvoked) {
-                        callbackInvoked = true
-                        Adivery.removeGlobalListener(this)
-                        Log.d(TAG, "Rewarded ad finished, rewarded=$isRewarded")
-                        onFinished()
+    fun showRewardedWithFullWatchRequirement(activity: Activity, onRewarded: () -> Unit) {
+        try {
+            if (Adivery.isLoaded(REWARDED_PLACEMENT_ID)) {
+                Log.d(TAG, "Rewarded ad is ready, showing...")
+                var callbackInvoked = false
+                val listener = object : AdiveryListener() {
+                    override fun onRewardedAdClosed(placementId: String, isRewarded: Boolean) {
+                        Log.d(TAG, "onRewardedAdClosed called: placementId=$placementId, isRewarded=$isRewarded, callbackInvoked=$callbackInvoked")
+                        if (placementId == REWARDED_PLACEMENT_ID && !callbackInvoked) {
+                            callbackInvoked = true
+                            Adivery.removeGlobalListener(this)
+                            if (isRewarded) {
+                                Log.d(TAG, "✅ User watched full ad. Granting reward.")
+                                onRewarded()
+                            } else {
+                                Log.w(TAG, "❌ User skipped ad. No reward. Connection will NOT proceed.")
+                            }
+                        }
                     }
                 }
+                Adivery.addGlobalListener(listener)
+                Adivery.showAd(REWARDED_PLACEMENT_ID)
+            } else {
+                Log.w(TAG, "Rewarded ad not ready. Granting reward without ad.")
+                onRewarded()
             }
-            Adivery.addGlobalListener(listener)
-            Adivery.showAd(REWARDED_PLACEMENT_ID)
-        } else {
-            // ریوارد آماده نیست، سعی می‌کنیم اینترستیشیال نمایش دهیم
-            Log.w(TAG, "Rewarded ad not ready, trying interstitial instead")
-            showInterstitialWithCallback(activity, onFinished)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing rewarded ad: ${e.message}")
+            onRewarded()
         }
     }
 
-    fun showInterstitialIfReady(activity: Activity) {
+    fun showInterstitialOrRewardedWithFullWatch(activity: Activity, onFinished: () -> Unit) {
         if (Adivery.isLoaded(INTERSTITIAL_PLACEMENT_ID)) {
-            Adivery.showAd(INTERSTITIAL_PLACEMENT_ID)
-        } else {
-            prepareInterstitial(activity)
+            Log.d(TAG, "Interstitial ad is ready, showing interstitial...")
+            showInterstitialWithCallback(activity, onFinished)
+            return
         }
+        if (Adivery.isLoaded(REWARDED_PLACEMENT_ID)) {
+            Log.d(TAG, "Interstitial not ready, showing rewarded ad with full watch requirement...")
+            showRewardedWithFullWatchRequirement(activity, onFinished)
+            return
+        }
+        Log.w(TAG, "No ad ready. Proceeding without ad.")
+        onFinished()
     }
 }

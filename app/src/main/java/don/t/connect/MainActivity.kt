@@ -22,6 +22,7 @@ import don.t.connect.navigation.AppNavigation
 import don.t.connect.ui.theme.DontConnectTheme
 import don.t.connect.utils.AdiveryAdManager
 import don.t.connect.utils.AdiveryBannerAd
+import don.t.connect.utils.MyketPurchaseManager
 import don.t.connect.viewmodel.FakeVpnViewModel
 import don.t.connect.viewmodel.InflationViewModel
 import don.t.connect.viewmodel.SettingsViewModel
@@ -36,6 +37,7 @@ class MainActivity : ComponentActivity() {
 
 
         AdiveryAdManager.initialize(application)
+        MyketPurchaseManager.initialize(applicationContext)
 
         Adivery.setLoggingEnabled(true)
 
@@ -103,6 +105,11 @@ class MainActivity : ComponentActivity() {
             insetsController.isAppearanceLightNavigationBars = true
         }
     }
+    override fun onDestroy() {
+        super.onDestroy()
+        MyketPurchaseManager.dispose()
+    }
+
 }
 
 @Preview(showBackground = true)

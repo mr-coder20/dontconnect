@@ -5,9 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -164,12 +166,20 @@ fun InflationScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                             )
+                            // don/t.connect/screens/InflationScreen.kt
+
+// داخل @Composable InflationScreen، در بخش دکمه محاسبه:
+
                             Button(
                                 onClick = {
                                     if (settingsState.isAdsRemoved) {
                                         viewModel.calculate()
                                     } else {
-                                        AdiveryAdManager.showRewardedOrInterstitialWithCallback(context as Activity) {
+                                        Toast.makeText(context,
+                                            if (isEnglish) "Please watch the ad to the end to calculate!" else "لطفاً تا انتهای تبلیغ را مشاهده کنید!",
+                                            Toast.LENGTH_LONG).show()
+                                        AdiveryAdManager.showInterstitialOrRewardedWithFullWatch(context as Activity) {
+                                            Log.d("InflationScreen", "Ad finished (or rewarded). Calculating...")
                                             viewModel.calculate()
                                         }
                                     }

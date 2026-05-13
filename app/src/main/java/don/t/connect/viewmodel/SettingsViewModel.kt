@@ -1,5 +1,6 @@
 package don.t.connect.viewmodel
 
+import android.app.Activity
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -10,6 +11,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import don.t.connect.utils.MyketPurchaseManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -87,15 +89,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun purchaseRemoveAds(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            try {
-                dataStore.edit { prefs ->
-                    prefs[ADS_REMOVED_KEY] = true
+    fun purchaseRemoveAds(activity: Activity, onSuccess: () -> Unit) {
+        MyketPurchaseManager.launchPurchaseFlow(activity) { success ->
+            if (success) {
+                viewModelScope.launch {
+                    dataStore.edit { prefs ->
+                        prefs[ADS_REMOVED_KEY] = true
+                    }
+                    _state.update { it.copy(isAdsRemoved = true) }
+                    onSuccess()
                 }
-                onSuccess()
-            } catch (e: Exception) {
-                onError(e.message ?: "خطا در خرید")
             }
         }
     }
