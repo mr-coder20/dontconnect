@@ -1,5 +1,8 @@
 package don.t.connect.screens
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,11 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import don.t.connect.MainActivity
 import don.t.connect.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,9 +28,10 @@ fun SettingsScreen(
 ) {
     val state by settingsViewModel.state.collectAsState()
     var languageMenuExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Scaffold(
-
+        // بدون topBar
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -36,7 +41,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 20.dp)
         ) {
-            // 🤖 کارت تم (حالت شب)
+            // کارت تم (حالت شب)
             item {
                 SettingsCard {
                     Row(
@@ -45,7 +50,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (state.currentLanguage == "fa") "حالت شب (چشماتو سیو کن)" else "Dark mode (save your eyes)",
+                            text = if (state.currentLanguage == "fa") "حالت شب (چشماتو نجات بده)" else "Dark mode (save your eyes)",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -64,7 +69,7 @@ fun SettingsScreen(
                 }
             }
 
-            // 🗣️ کارت زبان
+            // کارت زبان
             item {
                 SettingsCard {
                     Column(
@@ -107,7 +112,7 @@ fun SettingsScreen(
                                     text = { Text("فارسی (مادری)") },
                                     onClick = {
                                         settingsViewModel.setLanguage("fa")
-                                        languageMenuExpanded = false
+                                        restartApp(context)
                                     },
                                     leadingIcon = { if (state.currentLanguage == "fa") Icon(Icons.Default.Check, null) else null }
                                 )
@@ -115,22 +120,17 @@ fun SettingsScreen(
                                     text = { Text("English (just for fun)") },
                                     onClick = {
                                         settingsViewModel.setLanguage("en")
-                                        languageMenuExpanded = false
+                                        restartApp(context)
                                     },
                                     leadingIcon = { if (state.currentLanguage == "en") Icon(Icons.Default.Check, null) else null }
                                 )
                             }
                         }
-                        Text(
-                            text = if (state.currentLanguage == "fa") "(اگه زبون رو عوض کردی، برنامه یه چشم به هم زدن خودشو جمع وجور می‌کنه 😉)" else "(If you change language, the app will restart – don't panic 😄)",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }
 
-            // ⭐ کارت حمایت (فقط نظرسنجی)
+            // کارت حمایت (نظرسنجی)
             item {
                 SettingsCard {
                     Column(
@@ -162,48 +162,36 @@ fun SettingsScreen(
                 }
             }
 
-            // 🍔 کارت نجات برنامه‌نویس از گرسنگی (حذف تبلیغات)
+            // 📢 کارت دعوت دوستان (جایگزین کارت حذف تبلیغات)
             item {
                 SettingsCard {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = if (state.currentLanguage == "fa") "🍔 نجات برنامه‌نویس از گرسنگی" else "🍔 Save the dev from hunger",
+                            text = if (state.currentLanguage == "fa") "📢 دعوت دوستان" else "📢 Invite Friends",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = if (state.isAdsRemoved) {
-                                if (state.currentLanguage == "fa") "🙏 آفرین! برنامه‌نویس رفت نون بخره. چشمت روشن!" else "🙏 Awesome! Dev bought bread. You're a hero!"
-                            } else {
-                                if (state.currentLanguage == "fa") "🍜 برنامه‌نویس دو هفته‌ست ساندویچ نخورده! با حذف تبلیغات یه لقمه بهش برسون." else "🍜 Dev hasn't eaten a sandwich for 2 weeks. Help by removing ads."
-                            },
+                            text = if (state.currentLanguage == "fa") "این اپ رو با دوستانت به اشتراک بذار تا اونا هم بتونن محاسبات تورمی انجام بدن!" else "Share this app with friends so they can also do inflation calculations!",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Button(
-                            onClick = { if (!state.isAdsRemoved) settingsViewModel.purchaseRemoveAds({}, {}) },
+                            onClick = { shareApp(context, state.currentLanguage == "en") },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isAdsRemoved,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (state.isAdsRemoved) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary,
-                                contentColor = if (state.isAdsRemoved) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
                             shape = RoundedCornerShape(32.dp)
                         ) {
-                            Icon(
-                                if (state.isAdsRemoved) Icons.Default.CheckCircle else Icons.Default.Fastfood,
-                                null
-                            )
+                            Icon(Icons.Default.Share, null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                if (state.isAdsRemoved) {
-                                    if (state.currentLanguage == "fa") "✓ تبلیغات حذف شد (مرسی!)" else "✓ Ads removed (thanks!)"
-                                } else {
-                                    if (state.currentLanguage == "fa") "🍕 حذف تبلیغات + پیتزا برای برنامه‌نویس" else "🍕 Remove ads + pizza for dev"
-                                },
+                                if (state.currentLanguage == "fa") "📤 اشتراک گذاری" else "📤 Share",
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -236,4 +224,35 @@ private fun SettingsCard(
             content = content
         )
     }
+}
+
+private fun restartApp(context: Context) {
+    val intent = Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    }
+    context.startActivity(intent)
+    (context as? Activity)?.finish()
+}
+
+private fun shareApp(context: Context, isEnglish: Boolean) {
+    val packageName = context.packageName
+    val appLink = "https://myket.ir/app/$packageName"
+    val message = if (isEnglish) {
+        "🔥 Wondering when you can afford your dream product with current inflation?\n" +
+                "📊 \"Don't Connect\" app is **completely free** and calculates exactly how many months you need to save to reach the inflated price.\n" +
+                "😂 It also has a **funny-message VPN feature** (no subscription, totally free) that brings you some laughs!\n" +
+                "🎁 Useful & entertaining.\n\n" +
+                "Install from Myket: $appLink"
+    } else {
+        "🔥 می‌خوای بدونی با تورم فعلی، کی می‌تونی اون کالای رویاییت رو بخری؟\n" +
+                "📊 اپ «وصل نشو» **کاملاً رایگان**، دقیقاً بهت می‌گه چند ماه باید پس‌انداز کنی تا به قیمت تورمی برسی.\n" +
+                "😂 یه ویژگی خاص دیگه هم داره: **فیلترشکن با پیام‌های بامزه** (بدون اشتراک، کاملاً رایگان) که لحظات مفرحی برات میسازه!\n" +
+                "🎁 هم مفیده، هم سرگرم‌کننده.\n\n" +
+                "نصب کن از مایکت: $appLink"
+    }
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, message)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, if (isEnglish) "Share the app" else "اشتراک برنامه"))
 }

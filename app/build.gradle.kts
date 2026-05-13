@@ -67,4 +67,6 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation("androidx.compose.ui:ui:1.10.0")
+    implementation("androidx.compose.ui:ui-graphics:1.10.0")
 }
