@@ -4,8 +4,10 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.adivery.sdk.Adivery
 import com.adivery.sdk.AdiveryListener
+import ir.myket.billingclient.BuildConfig
 
 object AdiveryAdManager {
     private const val TAG = "AdiveryAdManager"
@@ -19,10 +21,7 @@ object AdiveryAdManager {
 
     fun initialize(application: Application) {
         Adivery.configure(application, APP_ID)
-        try {
-            Adivery::class.java.getMethod("setTestMode", Boolean::class.java).invoke(null, true)
-        } catch (e: NoSuchMethodException) { /* ignore */ }
-        Adivery.setLoggingEnabled(true)
+        Adivery.setLoggingEnabled(false)
         setupGlobalListener()
         Log.d(TAG, "Adivery initialized with APP_ID: $APP_ID")
     }
@@ -58,6 +57,9 @@ object AdiveryAdManager {
 
     fun showInterstitialWithCallback(activity: Activity, onClosed: () -> Unit) {
         if (Adivery.isLoaded(INTERSTITIAL_PLACEMENT_ID)) {
+            // فقط در صورتی که تبلیغ آماده باشد، پیام راهنما نشان بده
+            Toast.makeText(activity, "لطفاً تا انتهای تبلیغ را مشاهده کنید", Toast.LENGTH_LONG).show()
+
             var callbackInvoked = false
             val listener = object : AdiveryListener() {
                 override fun onInterstitialAdClosed(placementId: String) {
@@ -67,16 +69,16 @@ object AdiveryAdManager {
                         onClosed()
                     }
                 }
+
             }
             Adivery.addGlobalListener(listener)
             Adivery.showAd(INTERSTITIAL_PLACEMENT_ID)
             Log.d(TAG, "Showing interstitial ad")
         } else {
             Log.w(TAG, "Interstitial ad not ready, skipping")
-            onClosed()
+            onClosed()  // بدون پیام، مستقیماً ادامه بده
         }
     }
-
     fun showRewardedWithFullWatchRequirement(activity: Activity, onRewarded: () -> Unit) {
         try {
             if (Adivery.isLoaded(REWARDED_PLACEMENT_ID)) {

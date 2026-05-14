@@ -33,7 +33,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true       
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -75,14 +76,12 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.sdk)
-
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.mpandroidchart)
-    implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.ui:ui:1.10.0")
-    implementation("androidx.compose.ui:ui-graphics:1.10.0")
-
-    implementation("com.github.myketstore:myket-billing-client:1.19")
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.ui)
+    implementation(libs.ui.graphics)
+    implementation(libs.myket.billing.client)
 
 }

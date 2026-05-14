@@ -104,7 +104,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun openRatePage() {
-        openUrl("https://myket.ir/app/${context.packageName}")
+        val packageName = context.packageName
+        val uri = Uri.parse("myket://comment?id=$packageName")
+        val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            setPackage("ir.mservices.market")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // اگر مایکت نصب نبود، به لینک وب مایکت هدایت شود
+            openUrl("https://myket.ir/app/$packageName")
+        }
     }
 
     private fun openUrl(url: String) {

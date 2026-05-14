@@ -175,11 +175,10 @@ fun InflationScreen(
                                     if (settingsState.isAdsRemoved) {
                                         viewModel.calculate()
                                     } else {
-                                        Toast.makeText(context,
-                                            if (isEnglish) "Please watch the ad to the end to calculate!" else "لطفاً تا انتهای تبلیغ را مشاهده کنید!",
-                                            Toast.LENGTH_LONG).show()
-                                        AdiveryAdManager.showInterstitialOrRewardedWithFullWatch(context as Activity) {
-                                            Log.d("InflationScreen", "Ad finished (or rewarded). Calculating...")
+
+
+                                        // فقط تبلیغ میان صفحه‌ای (بدون جایزه‌دار)
+                                        AdiveryAdManager.showInterstitialWithCallback(context as Activity) {
                                             viewModel.calculate()
                                         }
                                     }
